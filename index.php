@@ -3,8 +3,11 @@
 // Set password (kosongkan untuk tanpa password)
 $password = 'admin123';
 
-// Konfigurasi
-$upload_dir = __DIR__ . '/uploads';
+$config_path = __DIR__ . '/minifs.json';
+$config = ['storage_path' => __DIR__ . '/uploads'];
+if (is_file($config_path)) $config = json_decode(file_get_contents($config_path), true) ?: $config;
+
+$upload_dir = $config['storage_path'];
 if (!is_dir($upload_dir)) mkdir($upload_dir, 0755, true);
 
 $is_auth = isset($_SESSION['auth']) && $_SESSION['auth'] === true;
@@ -22,6 +25,17 @@ if (isset($_POST['login'])) {
 
 // Logout
 if (isset($_GET['logout'])) { session_destroy(); header('Location: ?'); exit; }
+
+// Ganti storage
+if ($is_auth && isset($_POST['set_storage'])) {
+    $p = rtrim($_POST['storage_path'], '/');
+    if (is_dir($p)) {
+        $config['storage_path'] = $p;
+        file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT));
+        $upload_dir = $p;
+        $msg = 'Storage diubah ke: ' . htmlspecialchars($p); $msg_type = 'success';
+    } else { $msg = 'Path tidak valid!'; $msg_type = 'error'; }
+}
 
 // Upload
 if ($is_auth && isset($_FILES['file'])) {
@@ -48,9 +62,71 @@ $files = glob($upload_dir . '/*');
 $files = array_filter($files, 'is_file');
 usort($files, function($a, $b) { return filemtime($b) - filemtime($a); });
 
+// Deteksi drive yang terpasang
+function get_drives() {
+    $drives = [];
+    $paths = array_merge(glob('/media/*'), glob('/mnt/*'));
+    $real_root = realpath('/'); // prevent picking root
+
+    foreach ($paths as $p) {
+        if (!is_dir($p) || realpath($p) === $real_root) continue;
+        $free = @disk_free_space($p);
+        $total = @disk_total_space($p);
+        if ($total === false || $total == 0) continue;
+        // Skip jika ini system directory yg bukan mount terpisah
+        $drives[] = [
+            'path' => $p,
+            'name' => basename($p),
+            'free' => $free,
+            'total' => $total,
+            'pct' => $total > 0 ? round(($free / $total) * 100) : 0,
+            'active' => false,
+        ];
+    }
+
+    // Cari dari /proc/mounts untuk USB & SD card
+    if (is_file('/proc/mounts')) {
+        $mnt = file('/proc/mounts', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($mnt as $line) {
+            if (!str_contains($line, ' /media/') && !str_contains($line, ' /mnt/')) continue;
+            if (str_contains($line, 'tmpfs') || str_contains($line, 'overlay')) continue;
+            $parts = preg_split('/\s+/', $line);
+            $path = $parts[1] ?? '';
+            if (!is_dir($path) || realpath($path) === $real_root) continue;
+            $exists = false;
+            foreach ($drives as &$d) { if ($d['path'] === $path) { $exists = true; break; } }
+            if (!$exists) {
+                $free = @disk_free_space($path);
+                $total = @disk_total_space($path);
+                if ($total && $total > 0) {
+                    $drives[] = [
+                        'path' => $path, 'name' => basename($path),
+                        'free' => $free, 'total' => $total,
+                        'pct' => round(($free / $total) * 100),
+                        'active' => false,
+                    ];
+                }
+            }
+        }
+    }
+
+    // Tandai active
+    $upload_real = realpath($upload_dir);
+    foreach ($drives as &$d) {
+        $d_real = realpath($d['path']);
+        if ($upload_real && $d_real && str_starts_with($upload_real, $d_real)) {
+            $d['active'] = true;
+        }
+    }
+
+    return $drives;
+}
+
+$drives = function_exists('disk_free_space') ? get_drives() : [];
+
 function fmt_size($b) {
-    $u = ['B','KB','MB','GB']; $i = 0;
-    while ($b >= 1024 && $i < 3) { $b /= 1024; $i++; }
+    $u = ['B','KB','MB','GB','TB']; $i = 0;
+    while ($b >= 1024 && $i < 4) { $b /= 1024; $i++; }
     return round($b, 1) . ' ' . $u[$i];
 }
 
@@ -81,6 +157,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .btn-primary:hover{background:#0284c7}
 .btn-danger{background:#ef4444;color:#fff}
 .btn-danger:hover{background:#dc2626}
+.btn-success{background:#10b981;color:#fff}
+.btn-success:hover{background:#059669}
 .btn-outline{background:transparent;color:#94a3b8;border:1px solid #334155}
 .btn-outline:hover{background:#1e293b;color:#e2e8f0}
 .btn-sm{padding:5px 12px;font-size:12px}
@@ -104,14 +182,37 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .login-box p{text-align:center;color:#64748b;font-size:13px;margin-bottom:20px}
 .form-group{margin-bottom:14px}
 .form-group label{display:block;margin-bottom:5px;font-size:13px;color:#94a3b8;font-weight:500}
-.form-group input{width:100%;padding:10px 14px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:15px;outline:none;transition:border .2s}
-.form-group input:focus{border-color:#0ea5e9}
+.form-group input,.form-group select{width:100%;padding:10px 14px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:15px;outline:none;transition:border .2s}
+.form-group select option{background:#1e293b}
+.form-group input:focus,.form-group select:focus{border-color:#0ea5e9}
 .btn-block{width:100%;justify-content:center;padding:11px}
 .msg{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:15px}
 .msg.success{background:#064e3b;color:#6ee7b7;border:1px solid #065f46}
 .msg.error{background:#450a0a;color:#fca5a5;border:1px solid #7f1d1d}
 .login-icon{text-align:center;font-size:50px;margin-bottom:10px}
-@media(max-width:600px){.header{flex-direction:column;text-align:center}.file-actions{flex-direction:column}}
+.flex{display:flex;gap:10px;flex-wrap:wrap}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.info-box{background:#0f172a;border-radius:8px;padding:14px;border:1px solid #1e293b}
+.info-box .label{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.info-box .value{font-size:18px;font-weight:600;color:#e2e8f0}
+.info-box .value.green{color:#10b981}
+.info-box .value.yellow{color:#eab308}
+.info-box .value.red{color:#ef4444}
+.bar{height:6px;background:#1e293b;border-radius:3px;margin-top:8px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .3s}
+.drive-item{display:flex;align-items:center;padding:12px 14px;background:#0f172a;border-radius:8px;border:1px solid #1e293b;margin-bottom:8px;gap:12px;cursor:pointer}
+.drive-item:hover{border-color:#334155}
+.drive-item.active{border-color:#0ea5e9;background:#0c1929}
+.drive-icon{font-size:24px;flex-shrink:0}
+.drive-info{flex:1;min-width:0}
+.drive-name{font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px}
+.drive-name .badge{font-size:10px;background:#0ea5e9;color:#fff;padding:2px 8px;border-radius:4px;font-weight:500}
+.drive-path{font-size:12px;color:#64748b}
+.drive-size{font-size:12px;color:#94a3b8}
+.storage-current{background:#0f172a;border-radius:8px;padding:14px;border:1px solid #1e293b;margin-bottom:15px;word-break:break-all}
+.storage-current .label{font-size:11px;color:#64748b;margin-bottom:4px}
+.storage-current .path{font-size:14px;color:#38bdf8}
+@media(max-width:600px){.header{flex-direction:column;text-align:center}.file-actions{flex-direction:column}.info-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -143,6 +244,39 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 
 <?php if ($is_auth): ?>
 <div class="card">
+<h2>💾 Storage</h2>
+<div class="storage-current">
+<div class="label">Storage Aktif</div>
+<div class="path"><?=htmlspecialchars($upload_dir)?></div>
+</div>
+
+<?php if (!empty($drives)): ?>
+<div style="margin-bottom:12px;font-size:13px;color:#94a3b8">Drive yang terdeteksi:</div>
+<form method="post" id="storage-form">
+<?php foreach ($drives as $d): ?>
+<?php
+$pct_used = 100 - $d['pct'];
+$bar_color = $pct_used > 90 ? '#ef4444' : ($pct_used > 75 ? '#eab308' : '#10b981');
+?>
+<label class="drive-item<?=$d['active']?' active':''?>">
+<input type="radio" name="storage_path" value="<?=htmlspecialchars($d['path'])?>/minifs_uploads" style="display:none" <?=$d['active']?'checked':''?>>
+<span class="drive-icon"><?=str_contains($d['path'],'/usb')||str_contains($d['path'],'sd')||str_contains($d['path'],'ssd')?'💽':'💾'?></span>
+<div class="drive-info">
+<div class="drive-name"><?=htmlspecialchars($d['name'] ?: basename($d['path']))?> <?php if($d['active']):?><span class="badge">AKTIF</span><?php endif;?></div>
+<div class="drive-path"><?=htmlspecialchars($d['path'])?></div>
+<div class="drive-size"><?=fmt_size($d['total'])?> total &middot; <?=fmt_size($d['free'])?> tersisa</div>
+<div class="bar"><div class="bar-fill" style="width:<?=$pct_used?>%;background:<?=$bar_color?>"></div></div>
+</div>
+</label>
+<?php endforeach; ?>
+<button type="submit" name="set_storage" class="btn btn-success btn-block" style="margin-top:8px">Gunakan Storage Terpilih</button>
+</form>
+<?php else: ?>
+<p style="color:#64748b;font-size:13px">Tidak ada drive eksternal terdeteksi. Colokkan HDD/SSD/USB.</p>
+<?php endif; ?>
+</div>
+
+<div class="card">
 <h2>Upload File</h2>
 <form method="post" enctype="multipart/form-data" id="upload-form">
 <div class="upload-area" id="drop-area">
@@ -168,7 +302,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <span class="file-size"><?=fmt_size(filesize($f))?></span>
 </div>
 <div class="file-actions">
-<a href="uploads/<?=rawurlencode($name)?>" class="btn btn-primary btn-sm" download>Download</a>
+<a href="<?=str_replace(__DIR__ . '/', '', $f)?>" class="btn btn-primary btn-sm" download>Download</a>
 <?php if ($is_auth): ?>
 <a href="?delete=<?=rawurlencode($name)?>" class="btn btn-danger btn-sm" onclick="return confirm('Hapus file ini?')">Hapus</a>
 <?php endif; ?>
@@ -191,6 +325,13 @@ dropArea.addEventListener('click', () => fileInput.click());
 dropArea.addEventListener('drop', (e) => { fileInput.files = e.dataTransfer.files; document.getElementById('upload-form').submit(); });
 fileInput.addEventListener('change', () => { if (fileInput.files.length) document.getElementById('upload-form').submit(); });
 }
+// Auto-submit storage selection on radio click
+document.querySelectorAll('.drive-item input[type=radio]').forEach(r => {
+r.addEventListener('change', function() {
+document.querySelectorAll('.drive-item').forEach(d => d.classList.remove('active'));
+this.closest('.drive-item').classList.add('active');
+});
+});
 </script>
 </body>
 </html>
