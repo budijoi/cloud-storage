@@ -22,7 +22,7 @@ fi
 
 # 3. Copy file aplikasi
 echo "[3/4] Menyalin aplikasi ke /var/www/html..."
-cp index.php /var/www/html/index.php
+cp index.php admin.php login-form.php /var/www/html/ 2>/dev/null || cp index.php /var/www/html/
 mkdir -p /var/www/html/uploads
 chmod 777 /var/www/html/uploads
 
@@ -41,5 +41,5 @@ echo "Akses MiniFileServer di browser:"
 echo "  http://$IP/"
 echo ""
 echo "Default password: admin123"
-echo "Ubah di index.php baris: \$password = 'admin123';"
+echo "Ubah password: edit admin.php cari \$password = 'admin123';"
 echo ""

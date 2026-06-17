@@ -1,116 +1,65 @@
 # MiniFileServer
 
-File hosting untuk STB B860H. Simpan file di SD card, HDD, atau SSD. Bisa diakses dari HP, laptop, TV — dari rumah atau dari luar via internet.
+File hosting + File manager untuk STB B860H. Bisa diakses dari HP, laptop, TV.
 
-## Cara 1: Instalasi Otomatis (Paling Mudah)
+## Instalasi (3 langkah)
 
-Copy semua file ke STB, lalu jalankan:
-
+**1. Kirim file ke STB** (dari PC):
 ```bash
-cd /var/www/html
-bash install.sh
+scp * user@(ip-stb):/var/www/html/
 ```
 
-Selesai. Buka browser: `http://(ip-stb)/`
-
-Transfer file dari PC ke STB bisa pakai:
-
+**2. SSH ke STB, jalankan:**
 ```bash
-# Dari PC:
-scp index.php install.sh setup-automount.sh user@(ip-stb):/var/www/html/
+cd /var/www/html && bash install.sh
 ```
 
-## Cara 2: Manual (Jika Ingin Tahu Prosesnya)
-
-### Yang dibutuhkan
-- STB B860H sudah terinstall Armbian di SD card
-- Koneksi internet
-
-### Langkah
-
-**1. Install Apache & PHP**
-```bash
-sudo apt update
-sudo apt install apache2 php -y
+**3. Buka browser:**
 ```
-
-**2. Copy file MiniFileServer**
-```bash
-sudo cp index.php /var/www/html/
-sudo mkdir /var/www/html/uploads
-sudo chmod 777 /var/www/html/uploads
+http://(ip-stb)/
 ```
-
-**3. Selesai**
-```bash
-sudo systemctl restart apache2
-```
-
-Buka browser: `http://(ip-stb)/`
 
 > Cari IP STB: ketik `hostname -I` di terminal STB
 
-## Login Admin
+## Halaman
 
-Klik **Login Admin** di halaman utama.
+| Halaman | Akses | Fungsi |
+|---------|-------|--------|
+| `index.php` | Publik | Lihat & download file |
+| `admin.php` | Password: `admin123` | Upload, hapus, rename, pindah, salin, buat folder |
 
-| Data | Value |
-|------|-------|
-| Username | `admin` |
-| Password | `admin123` |
+## Fitur Admin
 
-Ubah password: edit file `index.php`, cari baris `$password = 'admin123';`, ganti angkanya.
+Buka `http://(ip-stb)/admin.php` lalu login.
 
-## Ganti Storage ke HDD/SSD (USB)
+| Fitur | Cara |
+|-------|------|
+| Upload | Klik tombol Upload, pilih file (bisa banyak) |
+| Buat folder | Klik Folder Baru, masukkan nama |
+| Rename | Klik ikon ✏ di samping file/folder |
+| Hapus | Klik ikon 🗑 atau centang lalu Hapus |
+| Pindahkan | Centang file, klik **Pindahkan**, pilih folder tujuan |
+| Salin | Centang file, klik **Salin**, pilih folder tujuan |
+| Download | Klik nama file |
+| Ganti storage | Buka `index.php`, login, pilih HDD/SSD di bagian Storage |
 
-1. Colok HDD/SSD ke USB STB
-2. Login admin
-3. Di bagian **Storage**, akan muncul drive yang terdeteksi
-4. Klik drive, lalu klik **Gunakan Storage Terpilih**
+## Default Password
 
-> File baru akan tersimpan di HDD/SSD. File lama tetap di tempat sebelumnya.
-
-## Biar Bisa Diakses dari Luar Rumah (Internet)
-
-### Pakai Cloudflare Tunnel (Gratis, Disarankan)
-
-```bash
-# Install
-curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64 -o /usr/local/bin/cloudflared
-chmod +x /usr/local/bin/cloudflared
-
-# Login (ikuti link yang muncul)
-cloudflared tunnel login
-
-# Buat tunnel
-cloudflared tunnel create minifs
-cloudflared tunnel route dns minifs namafile.anda.com
-cloudflared tunnel run minifs
+```
+admin123
 ```
 
-Nanti akses via `https://namafile.anda.com`
+Ubah di file `index.php` dan `admin.php`, cari `$password = 'admin123';`
 
-> Punya domain? Beli di Niagahoster, Namecheap, dll. Gratis? Pakai [nip.io](http://nip.io) — tinggal akses `http://(ip-stb).nip.io`
+## Struktur File
 
-## Ganti Password
-
-Edit `index.php` baris paling atas:
-
-```php
-$password = 'admin123';
 ```
-
-Ganti `admin123` dengan password baru. Kalau ingin tanpa password:
-
-```php
-$password = '';
+/var/www/html/
+├── index.php         # Halaman publik (download)
+├── admin.php         # Admin panel (file manager lengkap)
+├── login-form.php    # Halaman login admin
+├── install.sh        # Instalasi otomatis (jalankan sekali)
+├── setup-automount.sh # Auto-mount USB (dijalankan install.sh)
+├── minifs.json       # Konfigurasi storage (auto)
+└── uploads/          # File-file kamu
 ```
-
-## File yang Ada
-
-| File | Untuk |
-|------|-------|
-| `index.php` | Aplikasi utama (1 file doang) |
-| `install.sh` | Instal otomatis (jalankan sekali) |
-| `setup-automount.sh` | Biar HDD/SSD otomatis kebaca (dijalankan install.sh) |
-| `README.md` | Panduan ini |
