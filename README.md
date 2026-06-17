@@ -1,65 +1,92 @@
 # MiniFileServer
 
-File hosting + File manager untuk STB B860H. Bisa diakses dari HP, laptop, TV.
+File hosting + File manager untuk STB B860H. Semua file tersimpan di SD card atau HDD/SSD USB.
 
-## Instalasi (3 langkah)
+## Instalasi
 
-**1. Kirim file ke STB** (dari PC):
+**1. Install Apache & PHP** (SSH ke STB):
+```bash
+sudo apt update
+sudo apt install apache2 php -y
+```
+
+**2. Kirim file dari PC ke STB:**
 ```bash
 scp * user@(ip-stb):/var/www/html/
 ```
 
-**2. SSH ke STB, jalankan:**
+**3. Beri izin folder upload:**
 ```bash
-cd /var/www/html && bash install.sh
+sudo mkdir -p /var/www/html/uploads
+sudo chmod 777 /var/www/html/uploads
+sudo systemctl restart apache2
 ```
 
-**3. Buka browser:**
+**4. Buka browser:**
 ```
 http://(ip-stb)/
+http://(ip-stb)/admin.php
 ```
 
-> Cari IP STB: ketik `hostname -I` di terminal STB
+> Cari IP STB: ketik `hostname -I` di terminal
 
-## Halaman
+## Login Admin
+
+Buka `http://(ip-stb)/admin.php`
+
+| Data | Value |
+|------|-------|
+| Password | `admin123` |
+
+Ubah password: edit `admin.php`, cari `$password = 'admin123';`
+
+## Fitur
 
 | Halaman | Akses | Fungsi |
 |---------|-------|--------|
 | `index.php` | Publik | Lihat & download file |
-| `admin.php` | Password: `admin123` | Upload, hapus, rename, pindah, salin, buat folder |
+| `admin.php` | Password | Upload, hapus, rename, pindah, salin, buat folder |
 
-## Fitur Admin
+**Di admin panel:**
+- Upload file (bisa banyak & drag-and-drop)
+- Buat folder baru
+- Rename file/folder (klik ✏)
+- Hapus (satu-satu atau centang banyak lalu hapus massal)
+- Pindahkan file ke folder lain
+- Salin file ke folder lain
+- Navigasi folder dengan breadcrumb
+- Info kapasitas storage
 
-Buka `http://(ip-stb)/admin.php` lalu login.
+## Pakai HDD/SSD USB
 
-| Fitur | Cara |
-|-------|------|
-| Upload | Klik tombol Upload, pilih file (bisa banyak) |
-| Buat folder | Klik Folder Baru, masukkan nama |
-| Rename | Klik ikon ✏ di samping file/folder |
-| Hapus | Klik ikon 🗑 atau centang lalu Hapus |
-| Pindahkan | Centang file, klik **Pindahkan**, pilih folder tujuan |
-| Salin | Centang file, klik **Salin**, pilih folder tujuan |
-| Download | Klik nama file |
-| Ganti storage | Buka `index.php`, login, pilih HDD/SSD di bagian Storage |
+Colok HDD/SSD ke USB STB, lalu mount:
 
-## Default Password
-
+```bash
+lsblk
+sudo mount /dev/sda1 /mnt/hdd
+sudo chmod 777 /mnt/hdd
 ```
-admin123
+
+Ubah storage di `admin.php`: edit baris `$config['storage_path']` atau buka menu Storage di admin panel (login dulu).
+
+## Akses dari Internet (Cloudflare Tunnel)
+
+```bash
+curl -L https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-arm64 -o /usr/local/bin/cloudflared
+chmod +x /usr/local/bin/cloudflared
+cloudflared tunnel login
+cloudflared tunnel create minifs
+cloudflared tunnel route dns minifs namafile.anda.com
+cloudflared tunnel run minifs
 ```
 
-Ubah di file `index.php` dan `admin.php`, cari `$password = 'admin123';`
+Akses via `https://namafile.anda.com`
 
 ## Struktur File
 
 ```
 /var/www/html/
 ├── index.php         # Halaman publik (download)
-├── admin.php         # Admin panel (file manager lengkap)
-├── login-form.php    # Halaman login admin
-├── install.sh        # Instalasi otomatis (jalankan sekali)
-├── setup-automount.sh # Auto-mount USB (dijalankan install.sh)
-├── minifs.json       # Konfigurasi storage (auto)
-└── uploads/          # File-file kamu
+├── admin.php         # Admin panel (file manager)
+└── login-form.php    # Halaman login
 ```
