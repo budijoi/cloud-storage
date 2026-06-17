@@ -2,6 +2,8 @@
 
 Web file hosting ringan berbasis single-file PHP. Cocok untuk STB B860H / mini server dengan resource terbatas.
 
+Semua file dan data tersimpan di **SD Card**.
+
 ## Fitur
 
 - Single file (1 file PHP, tanpa database)
@@ -16,31 +18,78 @@ Web file hosting ringan berbasis single-file PHP. Cocok untuk STB B860H / mini s
 
 - PHP 7.4+
 - Web server (Apache / Nginx / PHP built-in server)
+- SD Card sudah terpasang di STB
 
 ## Instalasi di STB B860H (Armbian)
 
-### 1. Install Web Server & PHP
+### 1. Pasang & Mount SD Card
+
+```bash
+# Cek apakah SD card sudah terbaca
+lsblk
+
+# Biasanya terdeteksi sebagai /dev/mmcblk1 atau /dev/sda
+# Format ext4 (jika SD card baru):
+sudo mkfs.ext4 /dev/mmcblk1
+
+# Mount ke direktori permanen
+sudo mkdir -p /mnt/sdcard
+sudo mount /dev/mmcblk1 /mnt/sdcard
+
+# Auto-mount saat boot
+echo '/dev/mmcblk1 /mnt/sdcard ext4 defaults 0 0' | sudo tee -a /etc/fstab
+```
+
+### 2. Install Web Server & PHP
 
 ```bash
 sudo apt update
 sudo apt install apache2 php php-mbstring -y
 ```
 
-### 2. Copy File
+### 3. Copy Aplikasi ke SD Card
 
 ```bash
-# Hapus file default Apache
-sudo rm /var/www/html/index.html
+# Buat folder aplikasi di SD card
+sudo mkdir -p /mnt/sdcard/minifileserver
+sudo mkdir -p /mnt/sdcard/minifileserver/uploads
 
-# Copy MiniFileServer
-sudo cp index.php /var/www/html/
+# Copy file index.php (transfer dulu dari PC ke STB via scp/flashdisk)
+# Contoh via scp dari PC:
+# scp index.php user@192.168.1.100:/mnt/sdcard/minifileserver/
 
-# Buat folder uploads
-sudo mkdir /var/www/html/uploads
-sudo chmod 777 /var/www/html/uploads
+sudo cp index.php /mnt/sdcard/minifileserver/
+sudo chmod -R 777 /mnt/sdcard/minifileserver/uploads
 ```
 
-### 3. Konfigurasi PHP (upload larger files)
+### 4. Konfigurasi Apache Agar Serve dari SD Card
+
+```bash
+# Buat virtual host untuk aplikasi
+sudo nano /etc/apache2/sites-available/minifileserver.conf
+```
+
+Isi:
+
+```apache
+<VirtualHost *:80>
+    DocumentRoot /mnt/sdcard/minifileserver
+    <Directory /mnt/sdcard/minifileserver>
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+</VirtualHost>
+```
+
+```bash
+# Nonaktifkan default site, aktifkan konfigurasi baru
+sudo a2dissite 000-default.conf
+sudo a2ensite minifileserver.conf
+sudo systemctl restart apache2
+```
+
+### 5. Konfigurasi PHP (upload large files)
 
 ```bash
 sudo nano /etc/php/*/apache2/php.ini
@@ -54,22 +103,20 @@ post_max_size = 2G
 max_execution_time = 300
 ```
 
-### 4. Restart Apache & Cek IP
+### 6. Restart Apache & Cek IP
 
 ```bash
 sudo systemctl restart apache2
 hostname -I
 ```
 
-### 5. Akses
+### 7. Akses
 
 Buka browser dari perangkat lain di jaringan yang sama:
 
 ```
 http://<ip-stb>/
 ```
-
-Contoh: `http://192.168.1.100/`
 
 ## Login
 
@@ -120,7 +167,7 @@ sudo cloudflared service install $(cat ~/.cloudflared/*.json | grep -o '"token":
 ## Struktur Direktori
 
 ```
-/var/www/html/
+/mnt/sdcard/minifileserver/
 ├── index.php       # MiniFileServer (single file)
-└── uploads/        # Folder penyimpanan file
+└── uploads/        # Folder penyimpanan file (di SD card)
 ```
