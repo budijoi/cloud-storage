@@ -1,6 +1,6 @@
 <?php
 session_start();
-$password = 'admin123';
+$password = 'moch1234';
 $config_path = __DIR__ . '/minifs.json';
 $config = ['storage_path' => __DIR__ . '/uploads'];
 if (is_file($config_path)) $config = json_decode(file_get_contents($config_path), true) ?: $config;
@@ -138,8 +138,18 @@ foreach (glob($cur_dir . '/*') as $f) {
     $size = $is_dir ? 0 : filesize($f);
     $mtime = filemtime($f);
     $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-    $icon = $is_dir ? '📁'
-        : match($ext) { 'jpg','jpeg','png','gif','bmp','webp','svg'=>'🖼️','pdf'=>'📄','doc','docx'=>'📝','xls','xlsx','csv'=>'📊','zip','rar','7z','tar','gz'=>'📦','mp3','wav','ogg','flac'=>'🎵','mp4','avi','mkv','mov','webm'=>'🎬','php','html','js','css'=>'💻', default=>'📄' };
+    $icon = '📄';
+    if ($is_dir) $icon = '📁';
+    else { switch($ext) {
+        case 'jpg': case 'jpeg': case 'png': case 'gif': case 'bmp': case 'webp': case 'svg': $icon = '🖼️'; break;
+        case 'pdf': $icon = '📄'; break;
+        case 'doc': case 'docx': $icon = '📝'; break;
+        case 'xls': case 'xlsx': case 'csv': $icon = '📊'; break;
+        case 'zip': case 'rar': case '7z': case 'tar': case 'gz': $icon = '📦'; break;
+        case 'mp3': case 'wav': case 'ogg': case 'flac': $icon = '🎵'; break;
+        case 'mp4': case 'avi': case 'mkv': case 'mov': case 'webm': $icon = '🎬'; break;
+        case 'php': case 'html': case 'js': case 'css': $icon = '💻'; break;
+    } }
     $items[] = ['name' => $name, 'path' => $f, 'is_dir' => $is_dir, 'size' => $size, 'mtime' => $mtime, 'ext' => $ext, 'icon' => $icon];
 }
 usort($items, function($a, $b) { return $b['is_dir'] - $a['is_dir'] ?: strcasecmp($a['name'], $b['name']); });
@@ -318,7 +328,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <?php foreach ($items as $item):
 $enc = rawurlencode($item['name']);
 $dl_link = 'uploads/' . ($dir ? $dir . '/' : '') . $enc;
-$is_public = !str_starts_with(realpath($item['path']) . '/', realpath($root) . '/');
+$is_public = substr(realpath($item['path']) . '/', 0, strlen(realpath($root) . '/')) !== realpath($root) . '/';
 ?>
 <tr>
 <td><input type="checkbox" value="<?=htmlspecialchars($item['name'])?>" onchange="updateBulk()"></td>

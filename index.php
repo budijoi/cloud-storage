@@ -16,13 +16,18 @@ if ($all_files) {
         $name = basename($f);
         $is_dir = is_dir($f);
         $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-        $icon = $is_dir ? '📁' : match($ext) {
-            'jpg','jpeg','png','gif','bmp','webp','svg' => '🖼️', 'pdf' => '📄',
-            'doc','docx' => '📝', 'xls','xlsx','csv' => '📊',
-            'zip','rar','7z','tar','gz' => '📦', 'mp3','wav','ogg','flac' => '🎵',
-            'mp4','avi','mkv','mov','webm' => '🎬', 'php','html','js','css' => '💻',
-            default => '📄'
-        };
+        $icon = '📄';
+        if ($is_dir) $icon = '📁';
+        else { switch($ext) {
+            case 'jpg': case 'jpeg': case 'png': case 'gif': case 'bmp': case 'webp': case 'svg': $icon = '🖼️'; break;
+            case 'pdf': $icon = '📄'; break;
+            case 'doc': case 'docx': $icon = '📝'; break;
+            case 'xls': case 'xlsx': case 'csv': $icon = '📊'; break;
+            case 'zip': case 'rar': case '7z': case 'tar': case 'gz': $icon = '📦'; break;
+            case 'mp3': case 'wav': case 'ogg': case 'flac': $icon = '🎵'; break;
+            case 'mp4': case 'avi': case 'mkv': case 'mov': case 'webm': $icon = '🎬'; break;
+            case 'php': case 'html': case 'js': case 'css': $icon = '💻'; break;
+        } }
         $items[] = ['name' => $name, 'path' => $f, 'is_dir' => $is_dir, 'size' => is_file($f) ? filesize($f) : 0, 'icon' => $icon];
     }
     usort($items, function($a, $b) { return $b['is_dir'] - $a['is_dir'] ?: strcasecmp($a['name'], $b['name']); });
