@@ -55,10 +55,8 @@ if mountpoint -q "$MOUNT_POINT"; then
     chmod 777 "$MOUNT_POINT/minifs_uploads"
 fi
 
-# Trigger MiniFileServer refresh (touch config)
-if [ -f /mnt/sdcard/minifileserver/minifs.json ]; then
-    touch /mnt/sdcard/minifileserver/minifs.json
-fi
+# Trigger MiniFileServer refresh
+touch /mnt/sdcard/storage/.refresh 2>/dev/null || true
 SCRIPT
 
 # 4. Buat script umount
