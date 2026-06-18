@@ -152,21 +152,7 @@ Ada 2 halaman:
 2. Masukkan password: admin123
 3. Klik Login
 ```
-
-```
-┌─────────────────────────────────┐
-│        🔒 MiniFileServer        │
-│     Masukkan password admin     │
-│                                 │
-│  ┌─────────────────────────┐    │
-│  │ Password                 │    │
-│  └─────────────────────────┘    │
-│                                 │
-│  ┌─────────────────────────┐    │
-│  │         Login            │    │
-│  └─────────────────────────┘    │
-└─────────────────────────────────┘
-```
+<img width="359" height="340" alt="Screenshot 2026-06-18 103456" src="https://github.com/user-attachments/assets/32b25451-0de2-4f96-9ebc-0a3e37e70367" />
 
 ---
 
@@ -241,18 +227,8 @@ File akan tersimpan di microSD (`/mnt/sdcard/storage/`).
 4. Klik ✕ atau tekan ESC untuk tutup
 ```
 
-```
-┌─────────────────────────────────┐
-│  gambar.jpg                ✕   │
-├─────────────────────────────────┤
-│                                 │
-│           🖼️ GAMBAR              │
-│         (tampil penuh)          │
-│                                 │
-├─────────────────────────────────┤
-│       [📥 Download]             │
-└─────────────────────────────────┘
-```
+<img width="660" height="550" alt="Screenshot 2026-06-18 103621" src="https://github.com/user-attachments/assets/85671b23-241d-4731-848f-07720e1c5607" />
+
 
 ---
 
@@ -265,20 +241,9 @@ File akan tersimpan di microSD (`/mnt/sdcard/storage/`).
 4. Klik [📥 Download] untuk menyimpan
 ```
 
-```
-┌─────────────────────────────────┐
-│  lagu.mp3                  ✕   │
-├─────────────────────────────────┤
-│                                 │
-│    ╔═══════════════════╗        │
-│    ║    ▶️ || ⏸         ║        │
-│    ║  ████████░░░░░░░░  ║        │
-│    ╚═══════════════════╝        │
-│                                 │
-├─────────────────────────────────┤
-│       [📥 Download]             │
-└─────────────────────────────────┘
-```
+<img width="687" height="552" alt="Screenshot 2026-06-18 103227" src="https://github.com/user-attachments/assets/125e207f-056c-419b-bb11-6db70cd2f67c" />
+
+<img width="709" height="552" alt="Screenshot 2026-06-18 103208" src="https://github.com/user-attachments/assets/bc69f1cd-2a56-4fbc-b02b-38801c699efb" />
 
 ---
 
