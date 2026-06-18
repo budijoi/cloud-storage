@@ -80,6 +80,58 @@ Ganti `192.168.1.100` dengan IP STB kamu.
 
 ---
 
+## Aktifkan WiFi Cadangan
+
+Biar STB tetap bisa diakses meski kabel LAN dicabut.
+
+### Cara 1: Setup WiFi (rekomendasi)
+
+SSH ke STB, jalankan:
+
+```bash
+bash /mnt/sdcard/minifileserver/setup-wifi.sh
+```
+
+Masukkan SSID dan password WiFi saat diminta.
+
+```
+=== Setup WiFi Cadangan ===
+
+Interface WiFi terdeteksi: wlan0
+
+Nama WiFi (SSID): Pohon Mangga
+Password WiFi:
+Menghubungkan ke 'Pohon Mangga'...
+
+=== WiFi siap! ===
+
+IP Via WiFi : 192.168.1.105
+IP Via LAN  : 192.168.1.100
+
+Akses MiniFileServer dari WiFi:
+  http://192.168.1.105/
+  http://192.168.1.105/admin.php
+```
+
+### Cara 2: Manual via armbian-config
+
+```bash
+armbian-config
+```
+
+Pilih: **Network** → **WiFi** → pilih SSID → masukkan password.
+
+### Cara Kerja
+
+- **LAN** sebagai koneksi utama (prioritas tinggi)
+- **WiFi** sebagai cadangan (prioritas rendah)
+- Jika LAN dicabut, STB otomatis pindah ke WiFi
+- Jika LAN dicolok lagi, balik ke LAN
+
+> Untuk ganti WiFi, jalankan ulang `bash setup-wifi.sh`
+
+---
+
 ## Halaman Aplikasi
 
 Ada 2 halaman:
@@ -310,7 +362,8 @@ Akses dari mana saja: `https://namafile.anda.com`
 │   ├── login-form.php     ← Halaman login
 │   ├── serve.php          ← File server (streaming & preview)
 │   ├── minifs.json        ← Konfigurasi penyimpanan
-│   └── install.sh         ← Installer (jalankan sekali)
+│   ├── install.sh         ← Installer (jalankan sekali)
+│   └── setup-wifi.sh      ← Setup WiFi cadangan
 │
 └── storage/               ← File-file kamu disini
 ```

@@ -22,7 +22,7 @@ fi
 
 # 3. Copy file aplikasi
 echo "[3/4] Menyalin aplikasi..."
-cp index.php admin.php login-form.php serve.php /mnt/sdcard/minifileserver/ 2>/dev/null
+cp index.php admin.php login-form.php serve.php setup-wifi.sh /mnt/sdcard/minifileserver/ 2>/dev/null
 
 # 4. Buat folder storage di microSD
 echo "[4/4] Membuat folder storage di microSD..."
